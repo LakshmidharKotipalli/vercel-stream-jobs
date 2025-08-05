@@ -13,7 +13,7 @@ BRANCH = "main"
 @st.cache_data
 def fetch_json_files():
     # GitHub API URL to list contents of a folder
-    api_url = f"https://api.github.com/repos/{GITHUB_USER}/{REPO_NAME}/contents/{FOLDER_PATH}?ref={BRANCH}"
+    api_url = f"https://github.com/LakshmidharKotipalli/Job_Scraper/tree/main/data"
     res = requests.get(api_url)
     files = res.json()
     
