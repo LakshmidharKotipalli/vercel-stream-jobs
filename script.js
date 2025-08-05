@@ -4,7 +4,7 @@ const searchInput = document.getElementById("searchInput");
 const githubRepo = "LakshmidharKotipalli/Job_Scraper";
 const githubDataPath = "data";
 
-// Step 1: Get all JSON filenames from the GitHub repo using GitHub API
+// Step 1: Fetch JSON file names from GitHub
 async function fetchJobFileList() {
   const apiURL = `https://api.github.com/repos/${githubRepo}/contents/${githubDataPath}`;
   try {
@@ -19,7 +19,7 @@ async function fetchJobFileList() {
   }
 }
 
-// Step 2: Load each job file from raw.githubusercontent.com
+// Step 2: Load all JSON files
 async function loadAllJobs(files) {
   let allJobs = [];
 
@@ -39,12 +39,12 @@ async function loadAllJobs(files) {
   return allJobs;
 }
 
-// Step 3: Render job cards
+// Step 3: Render jobs
 function displayJobs(jobs) {
   jobListings.innerHTML = "";
 
   if (jobs.length === 0) {
-    jobListings.innerHTML = "<p>No jobs found.</p>";
+    jobListings.innerHTML = "<p>No matching jobs found.</p>";
     return;
   }
 
@@ -61,23 +61,25 @@ function displayJobs(jobs) {
   });
 }
 
-// Step 4: Filter based on search
+// Step 4: Match any search word with any field
 function filterJobs(jobs, query) {
-  return jobs.filter(job =>
-    (job.title && job.title.toLowerCase().includes(query)) ||
-    (job.company && job.company.toLowerCase().includes(query)) ||
-    (job.location && job.location.toLowerCase().includes(query))
-  );
+  if (!query.trim()) return jobs;
+
+  const words = query.toLowerCase().split(/\s+/);
+  return jobs.filter(job => {
+    const combined = `${job.title || ""} ${job.company || ""} ${job.location || ""} ${job.description || ""}`.toLowerCase();
+    return words.some(word => combined.includes(word));
+  });
 }
 
-// Initialize everything on load
+// Step 5: Initialize app
 window.addEventListener("DOMContentLoaded", async () => {
   const fileList = await fetchJobFileList();
   const allJobs = await loadAllJobs(fileList);
   displayJobs(allJobs);
 
   searchInput.addEventListener("input", () => {
-    const query = searchInput.value.toLowerCase();
+    const query = searchInput.value;
     const filtered = filterJobs(allJobs, query);
     displayJobs(filtered);
   });
