@@ -1,52 +1,67 @@
-const dataFolder = 'data';
-const jobListings = document.getElementById('jobListings');
-const searchInput = document.getElementById('searchInput');
+const jobListings = document.getElementById("jobListings");
+const searchInput = document.getElementById("searchInput");
 
-async function loadJobsFromFolder() {
-  const files = [
-    'jobs_batch_1.json',
-    'jobs_batch_2.json',
-    'jobs_batch_3.json',
-    // Add all your JSON filenames here
-  ];
+const githubRepo = "LakshmidharKotipalli/Job_Scraper";
+const githubDataPath = "data";
 
+// Step 1: Get all JSON filenames from the GitHub repo using GitHub API
+async function fetchJobFileList() {
+  const apiURL = `https://api.github.com/repos/${githubRepo}/contents/${githubDataPath}`;
+  try {
+    const res = await fetch(apiURL);
+    const files = await res.json();
+    return files
+      .filter(file => file.name.endsWith(".json"))
+      .map(file => file.name);
+  } catch (err) {
+    console.error("❌ Failed to fetch file list:", err);
+    return [];
+  }
+}
+
+// Step 2: Load each job file from raw.githubusercontent.com
+async function loadAllJobs(files) {
   let allJobs = [];
 
   for (const file of files) {
+    const rawURL = `https://raw.githubusercontent.com/${githubRepo}/main/${githubDataPath}/${file}`;
     try {
-      const res = await fetch(`${dataFolder}/${file}`);
+      const res = await fetch(rawURL);
       const data = await res.json();
       if (Array.isArray(data)) {
         allJobs = allJobs.concat(data);
       }
     } catch (err) {
-      console.error(`Failed to load ${file}:`, err);
+      console.error(`❌ Failed to load ${file}:`, err);
     }
   }
 
   return allJobs;
 }
 
+// Step 3: Render job cards
 function displayJobs(jobs) {
-  jobListings.innerHTML = '';
+  jobListings.innerHTML = "";
+
   if (jobs.length === 0) {
-    jobListings.innerHTML = '<p>No jobs found.</p>';
+    jobListings.innerHTML = "<p>No jobs found.</p>";
     return;
   }
 
   jobs.forEach(job => {
-    const card = document.createElement('div');
-    card.className = 'job-card';
+    const card = document.createElement("div");
+    card.className = "job-card";
     card.innerHTML = `
-      <h2>${job.title || 'Untitled Role'}</h2>
-      <p><strong>Company:</strong> ${job.company || 'N/A'}</p>
-      <p><strong>Location:</strong> ${job.location || 'Remote/Not Specified'}</p>
+      <h2>${job.title || "Untitled Role"}</h2>
+      <p><strong>Company:</strong> ${job.company || "N/A"}</p>
+      <p><strong>Location:</strong> ${job.location || "Remote/Not Specified"}</p>
       <a href="${job.url}" target="_blank">Apply Now</a>
     `;
     jobListings.appendChild(card);
   });
 }
 
+// Step 4: Filter based on search
 function filterJobs(jobs, query) {
   return jobs.filter(job =>
     (job.title && job.title.toLowerCase().includes(query)) ||
@@ -55,12 +70,15 @@ function filterJobs(jobs, query) {
   );
 }
 
-window.addEventListener('DOMContentLoaded', async () => {
-  const allJobs = await loadJobsFromFolder();
+// Initialize everything on load
+window.addEventListener("DOMContentLoaded", async () => {
+  const fileList = await fetchJobFileList();
+  const allJobs = await loadAllJobs(fileList);
   displayJobs(allJobs);
 
-  searchInput.addEventListener('input', () => {
-    const filtered = filterJobs(allJobs, searchInput.value.toLowerCase());
+  searchInput.addEventListener("input", () => {
+    const query = searchInput.value.toLowerCase();
+    const filtered = filterJobs(allJobs, query);
     displayJobs(filtered);
   });
 });
